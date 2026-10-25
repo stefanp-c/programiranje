@@ -60,7 +60,7 @@ namespace zadatak3
                 listBox1.Items.Add(item.Key + " | " + item.Value);
             }
 
-            double ukupno = artikli.Values.Sum(a => a.UkupnaCena);
+            double ukupno = artikli.Values.Sum(a => a.UkupnaCena);//ako je max onda mora if recnik.count > 0
 
             label2.Text = ukupno.ToString("0.00");
         }
