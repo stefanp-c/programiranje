@@ -1,25 +1,36 @@
---------------------------------------------------------------------------------------Kosarkas.cs
+--------------------------------------------------------------------------------------stavka.cs
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace _2zadatak
+namespace yadatak5
 {
-    public class Kosarkas
+    public class stavka
     {
-        public string Prezime {  get; set; }
-        public string Klub { get; set; }
-        public double Visina { get; set; }
-        public string Pozicija { get; set; }
+        public string Prezime { get; set; }
+        public string Naziv { get; set; }
+        public double Broj { get; set; }
+        public double Cena { get; set; }
+        public double Ukupnacena { get; set; }
+
+        public stavka(string prezime, string naziv, double broj, double cena) // osim ukupna cena
+        {
+            Prezime = prezime;
+            Naziv = naziv;
+            Broj = broj;
+            Cena = cena;
+            Ukupnacena = cena * broj;
+        }
 
         public override string ToString()
         {
-            return Prezime + " | " + Klub + " | " + Visina + " cm | " + Pozicija;
+            return $"Prezime: {Prezime}, Cvet: {Naziv}, Broj: {Broj}, Cena: {Cena}, Ukupna Cena: {Ukupnacena}";
         }
     }
 }
+
 --------------------------------------------------------------------------------------Form1.cs
 using System;
 using System.Collections.Generic;
@@ -31,77 +42,56 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace _2zadatak
+namespace yadatak5
 {
     public partial class Form1 : Form
     {
-        Queue<Kosarkas> red = new Queue<Kosarkas>();
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            FormUnos f = new FormUnos();
+        Queue<stavka> red = new Queue<stavka>();
 
-            if(f.ShowDialog() == DialogResult.OK)
-            {
-                red.Enqueue(f.NoviKosarkas);
-                PrikaziKosarkase();
-            }
-        }
-        private void PrikaziKosarkase()
+        private void osvezi()
         {
             richTextBox1.Clear();
-            foreach (Kosarkas k in red)
+            foreach (stavka item in red)
             {
-                richTextBox1.AppendText(k.ToString() + Environment.NewLine);
+                richTextBox1.AppendText(item.ToString());
+            }
+            double suma = 0;
+            foreach (stavka item in red)
+            {
+                suma += item.Ukupnacena;
+            }
+            label1.Text = suma.ToString();
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+            using (Form2 f = new Form2())
+            {
+                if (f.ShowDialog() == DialogResult.OK)
+                {
+                    red.Enqueue(f.novastavka);
+                    osvezi();
+                }
             }
         }
-
         private void button2_Click(object sender, EventArgs e)
         {
-            if (red.Count > 0)
-            {
-                red.Dequeue();
-                PrikaziKosarkase();
-            }
-            else
-            {
-                MessageBox.Show("Red je prazan.");
-            }
+            red.Dequeue();
+            osvezi();
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-            if (red.Count > 0)
-            {
-                red.Clear();
-                PrikaziKosarkase();
-            }
-            else
-            {
-                MessageBox.Show("Red je prazan.");
-            }
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-            if (red.Count > 0)
-            {
-                double prosek = red.Average(k => k.Visina);
-                label1.Text = prosek.ToString("0.00");
-            }
-            else
-            {
-                label1.Text = "------";
-            }
+            red.Clear();
+            osvezi();
         }
     }
 }
-
---------------------------------------------------------------------------------------FormUnos.cs
+--------------------------------------------------------------------------------------Form2.cs
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -112,39 +102,37 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace _2zadatak
+namespace yadatak5
 {
-    public partial class FormUnos : Form
+    public partial class Form2 : Form
     {
-        public Kosarkas NoviKosarkas {  get; private set; }
-        public FormUnos()
+        public Form2()
         {
             InitializeComponent();
         }
 
+        public stavka novastavka { get; private set; }
+
         private void button1_Click(object sender, EventArgs e)
         {
-            double visina;
-            if(
-                textBox1.Text.Trim() == "" ||
-                textBox2.Text.Trim() == "" ||
-                textBox4.Text.Trim() == "" ||
-                !double.TryParse(textBox3.Text, out visina) ||
-                visina <= 0)
+            string prezime = textBox1.Text;
+            string naziv = textBox2.Text;
+
+            double broj;
+            double cena;
+
+            if(prezime == "" || naziv == "" || !double.TryParse(textBox3.Text, out broj) || !double.TryParse(textBox4.Text, out cena))
             {
-                MessageBox.Show("Unesite ispravne podatke.");
+                MessageBox.Show("neispravan unos");
                 return;
             }
-            NoviKosarkas = new Kosarkas()
-            {
-                Prezime = textBox1.Text,
-                Klub = textBox2.Text,
-                Visina = visina,
-                Pozicija = textBox4.Text
-            };
 
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            novastavka = new stavka(prezime, naziv, broj, cena);
+
+            DialogResult = DialogResult.OK;
+            Close();
+
         }
     }
 }
+
