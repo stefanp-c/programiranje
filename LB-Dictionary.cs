@@ -125,6 +125,7 @@ namespace zadatak9
                 return;
             }
             int s = int.Parse(listBox1.SelectedItem.ToString().Substring(0,4));
+            //int s = int.Parse(listBox1.SelectedItem.ToString().Split(' ')[0]);
             recnik.Remove(s);
             osvezi();
             najsk();
