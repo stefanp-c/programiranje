@@ -1,36 +1,34 @@
----------------------------------------------------------------Artikal.cs
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace zadatak3
+namespace zadatak9
 {
-    public class Artikal
+    public class Rezervacija
     {
-        public string Naziv { get; set; }
-        public double Broj { get; set; }
-        public double Cena { get; set; }
-        public double UkupnaCena { get { return Broj * Cena; } }
+        public string Prezime {  get; set; }
+        public string Naziv {  get; set; }
+        public double Cena1 { get; set; }
+        public int Brkarata { get; set; }
+        public double Ukupnacena { get; set; }
 
-        public Artikal(string naziv, double broj, double cena)
+        public Rezervacija(string prezime, string naziv, double cena1, int brkarata)
         {
+            Prezime = prezime;
             Naziv = naziv;
-            Broj = broj;
-            Cena = cena;
+            Cena1 = cena1;
+            Brkarata = brkarata;
+            Ukupnacena = brkarata * cena1;
         }
+
         public override string ToString()
         {
-            return
-            Naziv +
-            " | Količina: " + Broj +
-            " | Cena: " + Cena.ToString("0.00") +
-            " | Ukupno: " + UkupnaCena.ToString("0.00");
+            return $"Prezime: {Prezime} Naziv: {Naziv} Cena1: {Cena1} Brkarata: {Brkarata} Ukupnacena: {Ukupnacena}";
         }
     }
 }
----------------------------------------------------------------Form1.cs
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -41,125 +39,132 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace zadatak3
+namespace zadatak9
+{
+    public partial class Form2 : Form
+    {
+        public Form2()
+        {
+            InitializeComponent();
+        }
+
+        public Rezervacija Nova { get; private set; }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            string prezime = textBox1.Text;
+            string naziv = textBox2.Text;
+            double cena1;
+            int brkarata;
+
+            if(prezime == "" || naziv == "" || textBox3.Text == "" || textBox4.Text == "")
+            {
+                MessageBox.Show("popunite sve");
+                return;
+            }
+            if(!double.TryParse(textBox3.Text, out cena1) || cena1 < 0)
+            {
+                MessageBox.Show("procerite cenu");
+                return;
+            }
+            if (!int.TryParse(textBox4.Text, out brkarata) || brkarata < 1)
+            {
+                MessageBox.Show("proverite broj karata");
+                return;
+            }
+
+            Nova = new Rezervacija(prezime, naziv, cena1, brkarata);
+
+            DialogResult = DialogResult.OK;
+            Close();
+
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace zadatak9
 {
     public partial class Form1 : Form
     {
-        Dictionary<double, Artikal> artikli = new Dictionary<double, Artikal>();
-
-        double sifra = 1000;
         public Form1()
         {
             InitializeComponent();
         }
-        private void Osvezi()
-        {
-            listBox1.Items.Clear();
-            foreach (var item in artikli)
-            {
-                listBox1.Items.Add(item.Key + " | " + item.Value);
-            }
 
-            double ukupno = artikli.Values.Sum(a => a.UkupnaCena);//ako je max onda mora if recnik.count > 0
+        Dictionary<int, Rezervacija> recnik = new Dictionary<int, Rezervacija>();
 
-            label2.Text = ukupno.ToString("0.00");
-        }
-
+        int sifra = 1000;
         private void button1_Click(object sender, EventArgs e)
         {
-            using (Form2 f = new Form2())
+            using (Form2 f2 = new Form2())
             {
-                if (f.ShowDialog() == DialogResult.OK)
+                if (f2.ShowDialog() == DialogResult.OK)
                 {
-                    Artikal novi = new Artikal
-                        (
-                        f.Naziv1,
-                        f.Broj1,
-                        f.Cena1
-                        );
-
-                    artikli.Add(sifra, novi);
+                    recnik.Add(sifra, f2.Nova);
                     sifra++;
-
-                    Osvezi();
+                    osvezi();
+                    najsk();
                 }
             }
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            //double a = artikli.Keys.Max();
-            //artikli.Remove(a);
-            //Osvezi();
-            if (listBox1.SelectedIndex == -1)
+            if(listBox1.SelectedIndices.Count < 1)
             {
-                MessageBox.Show("Niste odabrali ni 1 stavku.");
+                MessageBox.Show("odaberite nesto");
                 return;
             }
-            double sifra = int.Parse(listBox1.SelectedItem.ToString().Split('|')[0].Trim());
-            artikli.Remove(sifra);
-            Osvezi();
+            int s = int.Parse(listBox1.SelectedItem.ToString().Substring(0,4));
+            recnik.Remove(s);
+            osvezi();
+            najsk();
         }
+
         private void button3_Click(object sender, EventArgs e)
         {
-            artikli.Clear();
-            Osvezi();
+            if(recnik.Count == 0)
+            {
+                MessageBox.Show("nema stavki");
+                return;
+            }
+            recnik.Clear();
+            osvezi();
+            najsk();
         }
-    }
-}
-
----------------------------------------------------------------Form2.cs
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
-namespace zadatak3
-{
-    public partial class Form2 : Form
-    {
-        public string Naziv1 { get; set; }
-        public double Broj1 { get; set; }
-        public double Cena1 { get; set; }
-
-        public Form2()
+        private void osvezi()
         {
-            InitializeComponent();
+            listBox1.Items.Clear();
+            foreach (var item in recnik)
+            {
+                listBox1.Items.Add(item.Key + " " + item.Value);
+            }
+
         }
-
-        private void button1_Click(object sender, EventArgs e)
+        private void najsk()
         {
-            string naziv = textBox1.Text;
-            double kolicina;
-            double cena;
-
-            if(naziv == "")
+            if (recnik.Count > 0)
             {
-                MessageBox.Show("Unesite naziv.");
-                return;
+                double a = 0;
+                foreach (var item in recnik)
+                {
+                    if (item.Value.Ukupnacena > a)
+                        a = item.Value.Ukupnacena;
+                }
+                label1.Text = a.ToString("0.00");
             }
-            if(!double.TryParse(textBox2.Text, out kolicina) || kolicina <= 0)
-            {
-                MessageBox.Show("Uneste ispravnu kolicinu.");
-                return;
-            }
-            if (!double.TryParse(textBox3.Text, out cena) || cena < 0)
-            {
-                MessageBox.Show("Uneste ispravnu cenu.");
-                return;
-            }
-
-            Naziv1 = naziv;
-            Broj1 = kolicina;
-            Cena1 = cena;
+            else
+                label1.Text = "0.00";
             
-            DialogResult = DialogResult.OK;
-            Close();
         }
     }
 }
