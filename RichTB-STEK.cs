@@ -80,12 +80,13 @@ namespace _1zadatak
             {
                 stek.Pop();
                 PrikaziKnjige();
+                UkupnaCena();
             }
             else
             {
                 MessageBox.Show("Stek je prazan");
             }
-            UkupnaCena();
+            
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -93,6 +94,17 @@ namespace _1zadatak
             stek.Clear();
             PrikaziKnjige();
             UkupnaCena();
+        }
+
+        private void naj()//naziv onog koji ima najvise 'x'
+        {
+            if (stek.Count > 0)
+            {
+                Knjiga naj = stek.OrderByDescending(k => k.Cena).First();
+                label1.Text = naj.Naziv.ToString();
+            }
+            else
+                label1.Text = "------";
         }
 
         private void UkupnaCena()
@@ -104,7 +116,9 @@ namespace _1zadatak
                 ukupno += k.Cena;
             }
 
-            label1.Text = ukupno.ToString();
+            label1.Text = ukupno.ToString();//(ukupno/stek.Count) ZA PROSEK
+            if (stek.Count == 0)
+                label1.Text = "0";
         }
     }
 }
