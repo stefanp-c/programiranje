@@ -1,7 +1,6 @@
 ---------------------------------------------------------------
 1. Artikal.cs
 ---------------------------------------------------------------
-
 using System;
 
 namespace Prodavnica
@@ -11,7 +10,6 @@ namespace Prodavnica
         private string nazivProizvoda;
         private int brojProizvoda;
         private double cenaJednogProizvoda;
-        private double ukupnaCenaProizvoda;
 
         public static double ukupnaCenaKorpe = 0;
 
@@ -35,45 +33,41 @@ namespace Prodavnica
 
         public double UkupnaCenaProizvoda
         {
-            get { return ukupnaCenaProizvoda; }
+            get
+            {
+                double cena = brojProizvoda * cenaJednogProizvoda;
+
+                if (brojProizvoda > 4)
+                    cena *= 0.8;
+
+                return cena;
+            }
+        }
+
+        public bool ImaPopust
+        {
+            get { return brojProizvoda > 4; }
         }
 
         public Artikal(string naziv, int broj, double cena)
         {
-            nazivProizvoda = naziv;
-            brojProizvoda = broj;
-            cenaJednogProizvoda = cena;
+            NazivProizvoda = naziv;
+            BrojProizvoda = broj;
+            CenaJednogProizvoda = cena;
 
-            ukupnaCenaProizvoda = broj * cena;
-
-            // Popust od 20% ako je kolicina veca od 4.
-            if (broj > 4)
-            {
-                ukupnaCenaProizvoda = ukupnaCenaProizvoda * 0.8;
-            }
-
-            ukupnaCenaKorpe += ukupnaCenaProizvoda;
+            ukupnaCenaKorpe += UkupnaCenaProizvoda;
         }
 
         public override string ToString()
         {
-            string popust = "ne";
-
-            if (brojProizvoda > 4)
-            {
-                popust = "da";
-            }
-
-            return "Naziv proizvoda: " + nazivProizvoda +
-                   ", broj proizvoda: " + brojProizvoda +
-                   ", cena jednog proizvoda: " + cenaJednogProizvoda +
-                   ", popust: " + popust +
-                   ", ukupna cena: " + ukupnaCenaProizvoda;
+            return "Naziv proizvoda: " + NazivProizvoda +
+                ", broj proizvoda: " + BrojProizvoda +
+                " cena jednog proizvoda: " + CenaJednogProizvoda +
+                " popust: " + (ImaPopust ? "da" : "ne") +
+                " ukupna cena: " + UkupnaCenaProizvoda;
         }
     }
 }
-
-
 ---------------------------------------------------------------
 2. Form1.cs – GLAVNA FORMA
 ---------------------------------------------------------------
@@ -81,37 +75,52 @@ namespace Prodavnica
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Globalization;
 using System.Windows.Forms;
 
 namespace Prodavnica
 {
     public partial class Form1 : Form
     {
-        Stack<Artikal> korpa = new Stack<Artikal>();
+        public static Stack<Artikal> korpa = new Stack<Artikal>();
 
         public Form1()
         {
             InitializeComponent();
-            ucitajKorpu();
+            UcitajIzFajla();
         }
 
-        // Ucitavanje artikala iz fajla Korpa.txt.
-        private void ucitajKorpu()
+        // Prikaz sadržaja korpe
+        public void OsveziPrikaz()
         {
-            string putanja = Application.StartupPath + "\\Korpa.txt";
+            richTextBox1.Clear();
 
-            if (!File.Exists(putanja))
+            Artikal.ukupnaCenaKorpe = 0;
+
+            foreach (Artikal a in korpa)
             {
-                MessageBox.Show("Korpa je prazna!");
-                prikaziKorpu();
+                richTextBox1.AppendText(a.ToString() + Environment.NewLine);
+                Artikal.ukupnaCenaKorpe += a.UkupnaCenaProizvoda;
+            }
+
+            richTextBox1.AppendText(
+                Environment.NewLine +
+                "UKUPNA CENA KORPE: " +
+                Artikal.ukupnaCenaKorpe.ToString("0.00"));
+        }
+
+        // Ucitavanje iz fajla
+        private void UcitajIzFajla()
+        {
+            if (!File.Exists("Korpa.txt"))
+            {
+                MessageBox.Show("Korpa je prazna.");
                 return;
             }
 
-            Artikal.ukupnaCenaKorpe = 0;
             korpa.Clear();
+            Artikal.ukupnaCenaKorpe = 0;
 
-            string[] redovi = File.ReadAllLines(putanja);
+            string[] redovi = File.ReadAllLines("Korpa.txt");
 
             foreach (string red in redovi)
             {
@@ -120,70 +129,49 @@ namespace Prodavnica
                 if (podaci.Length == 3)
                 {
                     string naziv = podaci[0];
-                    int broj;
-                    double cena;
+                    int broj = int.Parse(podaci[1]);
 
-                    if (int.TryParse(podaci[1], out broj) &&
-                        double.TryParse(podaci[2],
-                            NumberStyles.Number,
-                            CultureInfo.CurrentCulture, out cena) &&
-                        broj > 0 && cena > 0)
-                    {
-                        Artikal a = new Artikal(naziv, broj, cena);
-                        korpa.Push(a);
-                    }
+                    double cena = double.Parse(
+                        podaci[2],
+                        System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS"));
+
+                    korpa.Push(new Artikal(naziv, broj, cena));
                 }
             }
 
-            prikaziKorpu();
+            OsveziPrikaz();
         }
 
-        // Prikaz svih artikala i ukupne cene korpe.
-        private void prikaziKorpu()
-        {
-            richTextBox1.Clear();
-
-            foreach (Artikal a in korpa)
-            {
-                richTextBox1.AppendText(a.ToString() + "\n\n");
-            }
-
-            richTextBox1.AppendText(
-                "UKUPNA CENA KORPE: " +
-                Artikal.ukupnaCenaKorpe.ToString("0.00"));
-        }
-
-        // Dugme UBACI U KORPU.
+        // Ubaci u korpu
         private void btnUbaci_Click(object sender, EventArgs e)
         {
-            Form2 f = new Form2(korpa);
+            Form2 f = new Form2();
             f.ShowDialog();
 
-            prikaziKorpu();
+            OsveziPrikaz();
         }
 
-        // Dugme STORNIRAJ POSLEDNJI.
+        // Storniranje poslednjeg artikla
         private void btnStorniraj_Click(object sender, EventArgs e)
         {
-            if (korpa.Count > 0)
-            {
-                Artikal a = korpa.Pop();
-
-                Artikal.ukupnaCenaKorpe -= a.UkupnaCenaProizvoda;
-
-                prikaziKorpu();
-            }
-            else
+            if (korpa.Count == 0)
             {
                 MessageBox.Show("Korpa je prazna!");
+                return;
             }
+
+            Artikal a = korpa.Pop();
+
+            Artikal.ukupnaCenaKorpe -= a.UkupnaCenaProizvoda;
+
+            OsveziPrikaz();
         }
 
-        // Dugme ISPRAZNI KORPU.
+        // Isprazni korpu
         private void btnIsprazni_Click(object sender, EventArgs e)
         {
             DialogResult odgovor = MessageBox.Show(
-                "Da li ste sigurni da zelite da ispraznite korpu?",
+                "Da li ste sigurni da želite da ispraznite korpu?",
                 "Potvrda",
                 MessageBoxButtons.OKCancel,
                 MessageBoxIcon.Question);
@@ -192,64 +180,56 @@ namespace Prodavnica
             {
                 korpa.Clear();
                 Artikal.ukupnaCenaKorpe = 0;
-
-                prikaziKorpu();
+                OsveziPrikaz();
             }
         }
 
-        // Dugme SACUVAJ U FAJL.
+        // Sacuvaj u fajl
         private void btnSacuvaj_Click(object sender, EventArgs e)
         {
-            string putanja = Application.StartupPath + "\\Korpa.txt";
-
-            using (StreamWriter sw = new StreamWriter(putanja))
+            using (StreamWriter sw = new StreamWriter("Korpa.txt"))
             {
+                // Stack se prolazi od poslednjeg dodatog ka prvom
                 foreach (Artikal a in korpa)
                 {
                     sw.WriteLine(
                         a.NazivProizvoda + "|" +
                         a.BrojProizvoda + "|" +
-                        a.CenaJednogProizvoda.ToString(
-                            CultureInfo.CurrentCulture));
+                        a.CenaJednogProizvoda);
                 }
             }
 
-            MessageBox.Show("Korpa je uspesno sacuvana!");
+            MessageBox.Show("Korpa je uspešno sačuvana!");
         }
 
-        // Dugme ZAVRSI KUPOVINU.
+        // Zavrsi kupovinu
         private void btnZavrsi_Click(object sender, EventArgs e)
         {
             DialogResult odgovor = MessageBox.Show(
                 "Ukupna vrednost korpe je: " +
                 Artikal.ukupnaCenaKorpe.ToString("0.00") +
-                "\nDa li ste sigurni da zelite da zavrsite kupovinu?",
-                "Zavrsetak kupovine",
+                "\nDa li ste sigurni da želite da završite kupovinu?",
+                "Završetak kupovine",
                 MessageBoxButtons.OKCancel,
                 MessageBoxIcon.Question);
 
             if (odgovor == DialogResult.OK)
-            {
                 Application.Exit();
-            }
         }
 
-        // Dugme STATISTIKA.
+        // Statistika
         private void btnStatistika_Click(object sender, EventArgs e)
         {
-            Form3 f = new Form3(korpa);
+            Form3 f = new Form3();
             f.ShowDialog();
         }
     }
 }
-
-
 ---------------------------------------------------------------
 3. Form2.cs – DODAVANJE ARTIKLA
 ---------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Windows.Forms;
 
@@ -257,105 +237,116 @@ namespace Prodavnica
 {
     public partial class Form2 : Form
     {
-        Stack<Artikal> korpa;
-
-        public Form2(Stack<Artikal> s)
+        public Form2()
         {
             InitializeComponent();
-            korpa = s;
 
-            numUpDown1.Minimum = 1;
-            numUpDown1.Value = 1;
+            numericUpDown1.Minimum = 1;
+            numericUpDown1.Maximum = 1000;
+            numericUpDown1.Value = 2;
         }
 
-        // Dugme STAVI U KORPU.
+        // Stavi u korpu
         private void btn1_Click(object sender, EventArgs e)
         {
+            bool ispravno = true;
+
             errorProvider1.Clear();
 
-            bool greska = false;
+            string naziv = tb1.Text.Trim();
 
-            if (tb1.Text.Trim().Length < 3)
+            // Provera naziva
+            if (naziv.Length < 3)
             {
                 errorProvider1.SetError(
-                    tb1, "Naziv mora imati bar 3 karaktera");
-                greska = true;
+                    tb1,
+                    "Naziv mora imati najmanje 3 karaktera!");
+
+                ispravno = false;
             }
 
+            // Provera cene
             double cena;
 
             if (!double.TryParse(
-                    tb2.Text,
-                    NumberStyles.Number,
-                    CultureInfo.CurrentCulture,
-                    out cena) || cena <= 0)
+                tb2.Text,
+                NumberStyles.Number,
+                CultureInfo.GetCultureInfo("sr-Latn-RS"),
+                out cena) || cena <= 0)
             {
                 errorProvider1.SetError(
-                    tb2, "Cena mora biti pozitivan realan broj");
-                greska = true;
+                    tb2,
+                    "Cena mora biti pozitivan realan broj!");
+
+                ispravno = false;
             }
 
-            if (numUpDown1.Value <= 1)
+            // Provera kolicine
+            if (numericUpDown1.Value <= 1)
             {
                 errorProvider1.SetError(
-                    numUpDown1, "Kolicina mora biti veca od 1");
-                greska = true;
+                    numericUpDown1,
+                    "Količina mora biti veća od 1!");
+
+                ispravno = false;
             }
 
-            // Provera da li artikal sa istim nazivom vec postoji.
-            foreach (Artikal a in korpa)
+            // Provera da li artikal vec postoji
+            foreach (Artikal a in Form1.korpa)
             {
-                if (a.NazivProizvoda.ToLower() ==
-                    tb1.Text.Trim().ToLower())
+                if (a.NazivProizvoda.Equals(
+                    naziv,
+                    StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show("Proizvod vec postoji u korpi!");
-                    greska = true;
+                    MessageBox.Show(
+                        "Proizvod sa tim nazivom već postoji!");
+
+                    ispravno = false;
                     break;
                 }
             }
 
-            if (greska)
-            {
+            if (!ispravno)
                 return;
-            }
 
+            // Kreiranje i dodavanje artikla
             Artikal novi = new Artikal(
-                tb1.Text.Trim(),
-                (int)numUpDown1.Value,
+                naziv,
+                (int)numericUpDown1.Value,
                 cena);
 
-            korpa.Push(novi);
+            Form1.korpa.Push(novi);
 
-            MessageBox.Show("Artikal je dodat u korpu!");
+            MessageBox.Show("Artikal je uspešno dodat u korpu!");
 
             this.Close();
         }
 
-        // Dugme RESETUJ.
+        // Resetovanje polja
         private void btn2_Click(object sender, EventArgs e)
         {
             tb1.Clear();
             tb2.Clear();
-            numUpDown1.Value = 1;
+
+            numericUpDown1.Value = 2;
 
             errorProvider1.Clear();
+
+            tb1.Focus();
         }
 
-        // Dugme ODUSTANI.
+        // Odustani
         private void btn3_Click(object sender, EventArgs e)
         {
             this.Close();
         }
     }
 }
-
-
 ---------------------------------------------------------------
 4. Form3.cs – STATISTIKA
 ---------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 
@@ -363,37 +354,50 @@ namespace Prodavnica
 {
     public partial class Form3 : Form
     {
-        Stack<Artikal> korpa;
-
-        public Form3(Stack<Artikal> s)
+        public Form3()
         {
             InitializeComponent();
 
-            korpa = s;
+            UcitajNazive();
+            chart1.Series.Clear();
 
-            // U CheckedListBox ubacujemo nazive proizvoda.
-            foreach (Artikal a in korpa)
+            chart1.ChartAreas[0].AxisY.Minimum = 0;
+            chart1.ChartAreas[0].AxisY.Interval = 20;
+        }
+
+        // Ucitavanje naziva proizvoda
+        private void UcitajNazive()
+        {
+            checkedListBox1.Items.Clear();
+
+            foreach (Artikal a in Form1.korpa)
             {
-                if (!checkedListBox1.Items.Contains(a.NazivProizvoda))
-                {
-                    checkedListBox1.Items.Add(a.NazivProizvoda);
-                }
+                checkedListBox1.Items.Add(a.NazivProizvoda);
             }
         }
 
-        private void prikaziStatistiku()
+        // Prikaz statistike
+        private void PrikaziStatistiku()
         {
             chart1.Series.Clear();
 
-            // Statistika cene jednog proizvoda.
-            if (checkBox1.Checked)
+            if (!checkBoxCena.Checked &&
+                !checkBoxKolicina.Checked)
+            {
+                MessageBox.Show(
+                    "Izaberite cenu ili količinu!");
+
+                return;
+            }
+
+            if (checkBoxCena.Checked)
             {
                 Series cena = new Series("Cena");
                 cena.ChartType = SeriesChartType.Column;
 
                 foreach (string naziv in checkedListBox1.CheckedItems)
                 {
-                    foreach (Artikal a in korpa)
+                    foreach (Artikal a in Form1.korpa)
                     {
                         if (a.NazivProizvoda == naziv)
                         {
@@ -407,15 +411,14 @@ namespace Prodavnica
                 chart1.Series.Add(cena);
             }
 
-            // Statistika kolicine kupljenog proizvoda.
-            if (checkBox2.Checked)
+            if (checkBoxKolicina.Checked)
             {
-                Series kolicina = new Series("Kolicina");
+                Series kolicina = new Series("Količina");
                 kolicina.ChartType = SeriesChartType.Column;
 
                 foreach (string naziv in checkedListBox1.CheckedItems)
                 {
-                    foreach (Artikal a in korpa)
+                    foreach (Artikal a in Form1.korpa)
                     {
                         if (a.NazivProizvoda == naziv)
                         {
@@ -429,37 +432,32 @@ namespace Prodavnica
                 chart1.Series.Add(kolicina);
             }
 
-            // Y osa pocinje od 0, a oznake su na 0, 20, 40, 60...
-            // Maksimum se automatski prilagodjava podacima grafikona.
-            chart1.ChartAreas[0].AxisY.Minimum = 0;
-            chart1.ChartAreas[0].AxisY.Interval = 20;
-            chart1.ChartAreas[0].AxisY.Maximum = double.NaN;
+            chart1.ChartAreas[0].RecalculateAxesScale();
         }
 
-        // Dogadjaj ItemCheck za CheckedListBox.
-        private void checkedListBox1_ItemCheck(
-            object sender, ItemCheckEventArgs e)
-        {
-            // BeginInvoke izvrsava prikaz nakon promene cekiranja.
-            this.BeginInvoke(new Action(prikaziStatistiku));
-        }
-
-        // Dogadjaj CheckedChanged za checkbox CENA.
-        private void checkBox1_CheckedChanged(
+        // Promena izabranih proizvoda
+        private void checkedListBox1_SelectedIndexChanged(
             object sender, EventArgs e)
         {
-            prikaziStatistiku();
+            PrikaziStatistiku();
         }
 
-        // Dogadjaj CheckedChanged za checkbox KOLICINA.
-        private void checkBox2_CheckedChanged(
+        // Promena checkbox-a za cenu
+        private void checkBoxCena_CheckedChanged(
             object sender, EventArgs e)
         {
-            prikaziStatistiku();
+            PrikaziStatistiku();
         }
 
-        // Dugme ZATVORI.
-        private void btnZatvori_Click(object sender, EventArgs e)
+        // Promena checkbox-a za kolicinu
+        private void checkBoxKolicina_CheckedChanged(
+            object sender, EventArgs e)
+        {
+            PrikaziStatistiku();
+        }
+
+        // Zatvaranje forme
+        private void btn1_Click(object sender, EventArgs e)
         {
             this.Close();
         }
