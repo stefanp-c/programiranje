@@ -346,6 +346,7 @@ namespace Knjizara
 
             Series s = new Series();
             s.ChartType = SeriesChartType.Line;
+            s.IsValueShownAsLabel = true;
 
             for (int i = 0; i < checkedListBox1.CheckedItems.Count; i++)
             {
