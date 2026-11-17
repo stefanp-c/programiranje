@@ -14,24 +14,24 @@ private void PrikaziGrafik()
     s.ChartType = SeriesChartType.Line;
     s.IsValueShownAsLabel = true;
 
-    for (int i = 0; i < checkedListBox1.CheckedItems.Count; i++)
+foreach (string naziv in checkedListBox1.CheckedItems)
+{
+    foreach (Knjiga k in Form1.red)
     {
-        string naziv = checkedListBox1.CheckedItems[i].ToString();
-
-        foreach (Knjiga k in Form1.red)
+        if (k.NazivKnjige == naziv)
         {
-            if (k.NazivKnjige == naziv)
-            {
-                if (radioButton1.Checked)
-                    s.Points.AddXY(naziv, k.BrojStranica);
+            if (radioButton1.Checked)
+                s.Points.AddXY(naziv, k.BrojStranica);
 
-                if (radioButton2.Checked)
-                    s.Points.AddXY(naziv, k.UkupnaCena);
-            }
+            if (radioButton2.Checked)
+                s.Points.AddXY(naziv, k.UkupnaCena);
         }
     }
-    chart1.Series.Add(s);
 }
+
+chart1.Series.Add(s);
+}
+
 //COLUMN
 private void PrikaziStatistiku()
 {
@@ -48,9 +48,7 @@ private void PrikaziStatistiku()
             {
                 if (a.NazivProizvoda == naziv)
                 {
-                    cena.Points.AddXY(
-                        naziv,
-                        a.CenaJednogProizvoda);
+                    cena.Points.AddXY(naziv, a.CenaJednogProizvoda);
                 }
             }
         }
@@ -69,9 +67,7 @@ private void PrikaziStatistiku()
             {
                 if (a.NazivProizvoda == naziv)
                 {
-                    kolicina.Points.AddXY(
-                        naziv,
-                        a.BrojProizvoda);
+                    kolicina.Points.AddXY(naziv, a.BrojProizvoda);
                 }
             }
         }
@@ -82,31 +78,33 @@ private void PrikaziStatistiku()
     chart1.ChartAreas[0].RecalculateAxesScale();
 }
 //PIE
-private void PrikaziStatistiku()
+private void prikazi()
 {
-    chart1.Series.Clear();
-
-    Series s = new Series("Statistika");
-    s.ChartType = SeriesChartType.Pie;
-
-    foreach (object stavka in checkedListBox1.CheckedItems)
+    if (radioButton1.Checked)
     {
-        string izabrani = stavka.ToString();
-
-        int broj = int.Parse(
-            izabrani.Split('-')[0].Trim());
-
-        Gost g = Form1.rezervacije[broj];
-
-        double vrednost;
-
-        if (rbNocenja.Checked)
-            vrednost = g.BrojNocenja;
-        else
-            vrednost = g.Cena;
-
-        s.Points.AddXY(g.Prezime, vrednost);
+        chart1.Series.Clear();
+        Series s = new Series();
+        s.IsValueShownAsLabel = true;
+        s.ChartType = SeriesChartType.Pie;
+        foreach (string item in checkedListBox1.CheckedItems)
+        {
+            Class1 c = Form1.recnik.Values.FirstOrDefault(x => x.Prezime == item);
+            s.Points.AddXY(c.Prezime, c.Brojnocenja);
+        }
+        chart1.Series.Add(s);
+        
     }
-
-    chart1.Series.Add(s);
+    else if (radioButton2.Checked)
+    {
+        chart1.Series.Clear();
+        Series s = new Series();
+        s.IsValueShownAsLabel = true;
+        s.ChartType = SeriesChartType.Pie;
+        foreach (string item in checkedListBox1.CheckedItems)
+        {
+            Class1 c = Form1.recnik.Values.FirstOrDefault(x => x.Prezime == item);
+            s.Points.AddXY(c.Prezime, c.Cena);
+        }
+        chart1.Series.Add(s);
+    }
 }
